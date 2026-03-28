@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir-pt edtech — College & Course Comparator</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ═══════════════════ NAVBAR ═══════════════════ -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="brand-icon">◈</span>
+      <span class="brand-name">ir-pt <strong>edtech</strong></span>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-admin-login" id="btnAdminToggle" onclick="toggleAdminPanel()">
+        <span class="icon">⚙</span> Admin
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════ HERO ═══════════════════ -->
+  <section class="hero" id="viewerSection">
+    <div class="hero-text">
+      <p class="hero-tag">Smart Fee Comparison Tool</p>
+      <h1>Find the <em>Right Course</em><br/>at the <em>Right Price</em></h1>
+      <p class="hero-sub">Compare fees across colleges instantly. Real data. No guesswork.</p>
+    </div>
+    <div class="hero-stats" id="heroStats">
+      <div class="stat"><span id="statColleges">0</span><small>Colleges</small></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><span id="statCourses">0</span><small>Courses</small></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><span id="statEntries">0</span><small>Entries</small></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ FILTER BAR ═══════════════════ -->
+  <div class="filter-bar sticky" id="filterBar">
+    <div class="filter-bar-inner">
+      <div class="filter-group search-group">
+        <span class="filter-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search college or course…" oninput="applyFilters()" autocomplete="off" />
+        <button class="clear-search" id="clearSearch" onclick="clearSearchInput()" title="Clear">✕</button>
+      </div>
+      <div class="filter-group">
+        <label>College</label>
+        <select id="filterCollege" onchange="applyFilters()">
+          <option value="">All Colleges</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Course</label>
+        <select id="filterCourse" onchange="applyFilters()">
+          <option value="">All Courses</option>
+        </select>
+      </div>
+      <div class="filter-group sort-group">
+        <label>Sort by Fee</label>
+        <div class="sort-btns">
+          <button class="sort-btn" id="sortAsc" onclick="setSort('asc')" title="Low to High">↑ Low</button>
+          <button class="sort-btn" id="sortDesc" onclick="setSort('desc')" title="High to Low">↓ High</button>
+          <button class="sort-btn active" id="sortNone" onclick="setSort('none')" title="Default">Default</button>
+        </div>
+      </div>
+      <button class="btn-reset-filters" onclick="resetFilters()">Reset</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+  <main class="main-content">
+
+    <!-- COMPARISON PANEL (auto-triggered) -->
+    <section class="compare-panel" id="comparePanel" style="display:none">
+      <div class="compare-header">
+        <h2>📊 Course Comparison</h2>
+        <span class="compare-course-name" id="compareCourseName"></span>
+        <button class="btn-close-compare" onclick="closeCompare()">✕ Close</button>
+      </div>
+      <div class="compare-table-wrap">
+        <table class="compare-table" id="compareTable">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>College Name</th>
+              <th>Course</th>
+              <th>Annual Fee</th>
+              <th>Difference</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="compareTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- MAIN DATA TABLE -->
+    <section class="data-section">
+      <div class="data-header">
+        <h2>All Entries <span class="data-count" id="dataCount">0</span></h2>
+        <div class="view-toggle">
+          <button class="vt-btn active" id="vtTable" onclick="setView('table')">☰ Table</button>
+          <button class="vt-btn" id="vtCard" onclick="setView('card')">⊞ Cards</button>
+        </div>
+      </div>
+
+      <!-- TABLE VIEW -->
+      <div id="tableView">
+        <div class="table-wrap">
+          <table class="main-table" id="mainTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th onclick="columnSort('college')" class="sortable">College <span class="sort-arrow" id="arr-college"></span></th>
+                <th onclick="columnSort('course')" class="sortable">Course <span class="sort-arrow" id="arr-course"></span></th>
+                <th onclick="columnSort('fee')" class="sortable">Annual Fee <span class="sort-arrow" id="arr-fee"></span></th>
+                <th>Compare</th>
+              </tr>
+            </thead>
+            <tbody id="mainTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CARD VIEW -->
+      <div id="cardView" style="display:none">
+        <div class="cards-grid" id="cardsGrid"></div>
+      </div>
+
+      <div class="no-results" id="noResults" style="display:none">
+        <div class="no-results-icon">🎓</div>
+        <p>No entries found for your search.</p>
+        <small>Try adjusting your filters or search term.</small>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══════════════════ ADMIN PANEL ═══════════════════ -->
+  <div class="admin-overlay" id="adminOverlay">
+
+    <!-- LOGIN SCREEN -->
+    <div class="admin-login-box" id="adminLoginBox">
+      <button class="overlay-close" onclick="closeAdmin()">✕</button>
+      <div class="login-icon">🔐</div>
+      <h2>Admin Access</h2>
+      <p>ir-pt edtech management portal</p>
+      <div class="login-form">
+        <div class="form-field">
+          <label>Username</label>
+          <input type="text" id="loginUser" placeholder="Enter username" autocomplete="off" />
+        </div>
+        <div class="form-field">
+          <label>Password</label>
+          <input type="password" id="loginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()" />
+        </div>
+        <div class="login-error" id="loginError"></div>
+        <button class="btn-login" onclick="doLogin()">Login →</button>
+      </div>
+    </div>
+
+    <!-- ADMIN DASHBOARD -->
+    <div class="admin-dashboard" id="adminDashboard" style="display:none">
+      <div class="admin-header">
+        <div>
+          <h2>⚙ Admin Panel</h2>
+          <span class="admin-badge">ir-pt edtech</span>
+        </div>
+        <div class="admin-header-actions">
+          <button class="btn-secondary" onclick="showBulkUpload()">📥 Bulk Upload</button>
+          <button class="btn-danger-sm" onclick="doLogout()">Logout</button>
+          <button class="overlay-close" onclick="closeAdmin()">✕</button>
+        </div>
+      </div>
+
+      <div class="admin-body">
+        <!-- ADD / EDIT FORM -->
+        <div class="admin-form-panel">
+          <h3 id="formTitle">➕ Add New Entry</h3>
+          <input type="hidden" id="editId" value="" />
+          <div class="admin-form-grid">
+            <div class="form-field">
+              <label>College Name *</label>
+              <input type="text" id="formCollege" placeholder="e.g. ABC Medical College" />
+            </div>
+            <div class="form-field">
+              <label>Course Name *</label>
+              <input type="text" id="formCourse" placeholder="e.g. B Pharma" list="courseList" />
+              <datalist id="courseList"></datalist>
+            </div>
+            <div class="form-field">
+              <label>Annual Fee (₹) *</label>
+              <input type="number" id="formFee" placeholder="e.g. 80000" min="0" />
+            </div>
+            <div class="form-field">
+              <label>Duration</label>
+              <input type="text" id="formDuration" placeholder="e.g. 4 Years" />
+            </div>
+            <div class="form-field">
+              <label>College City</label>
+              <input type="text" id="formCity" placeholder="e.g. Bhopal" />
+            </div>
+            <div class="form-field">
+              <label>College Type</label>
+              <select id="formType">
+                <option value="Private">Private</option>
+                <option value="Government">Government</option>
+                <option value="Deemed">Deemed</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" id="formSubmitBtn" onclick="submitForm()">➕ Add Entry</button>
+            <button class="btn-secondary" onclick="cancelEdit()" id="cancelBtn" style="display:none">Cancel</button>
+          </div>
+          <div class="form-msg" id="formMsg"></div>
+        </div>
+
+        <!-- BULK UPLOAD -->
+        <div class="bulk-panel" id="bulkPanel" style="display:none">
+          <h3>📥 Bulk Upload via JSON</h3>
+          <p class="bulk-hint">Paste a JSON array. Each object: <code>{"college","course","fee","duration","city","type"}</code></p>
+          <textarea id="bulkJson" rows="8" placeholder='[{"college":"ABC College","course":"B Pharma","fee":80000,"duration":"4 Years","city":"Bhopal","type":"Private"}]'></textarea>
+          <div class="form-actions">
+            <button class="btn-primary" onclick="doBulkUpload()">Upload</button>
+            <button class="btn-secondary" onclick="hideBulkUpload()">Cancel</button>
+          </div>
+          <div class="form-msg" id="bulkMsg"></div>
+        </div>
+
+        <!-- ADMIN TABLE -->
+        <div class="admin-table-panel">
+          <div class="admin-table-header">
+            <h3>📋 Manage Entries <span class="data-count" id="adminCount">0</span></h3>
+            <input type="text" id="adminSearch" placeholder="Search…" oninput="renderAdminTable()" style="width:180px" />
+          </div>
+          <div class="table-wrap">
+            <table class="main-table admin-tbl">
+              <thead>
+                <tr>
+                  <th>#</th><th>College</th><th>Course</th><th>Fee</th><th>City</th><th>Type</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminTableBody"></tbody>
+            </table>
+          </div>
+          <div class="no-results" id="adminNoResults" style="display:none">
+            <p>No entries found.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>© 2025 <strong>ir-pt edtech</strong> — Empowering Students with Smart Choices</p>
+    <p class="footer-sub">Data sourced from official college brochures. Always verify before admission.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
